@@ -21,8 +21,10 @@ fs_ba = baData(baData.isStable ==0,:);
 northDigs = {'Corr'};
 southDigs = {'Geo'};
 
-fid = fopen(fullfile(output_path, 'heading_pred_per_animal.txt'), 'w');
-fprintf(fid, 'Heading Prediction using rates, broken down by cell type, per animal\n\n');
+mincell = -inf;
+
+fid = fopen(fullfile(output_path, 'heading_pred_per_trial.txt'), 'w');
+fprintf(fid, 'Heading Prediction using rates, broken down by cell type, per trial\n\n');
 
 
 %% Perform Heading prediction in FI cells. 
@@ -33,10 +35,10 @@ for d = 1:3
     dtbl = celltype(celltype.dayUsed == d,:);
     sessions = unique([dtbl(:,1), dtbl(:,end)], 'rows');
     animals = unique(sessions.animalName);
-    perAnimalPred = cell(length(animals),1);
+    perTrialPred = cell(length(animals),1);
     for a = 1:length(animals)
         cellnames = celltype.animalSessionCellName(ismember(celltype.animalName, animals{a}) & celltype.dayUsed == d);
-        fprintf('animal %s has %d FS cells\n', animals{a}, length(cellnames));
+
         stbl = mapsData(ismember(mapsData.animalName, animals{a}) & mapsData.dayUsed == d,:);
         digs = unique([stbl(:,6), stbl(:,9)], 'rows');
         tmprv = nan(length(digs.trialId), length(cellnames));
@@ -50,8 +52,11 @@ for d = 1:3
         digClass = categorical(digs.dig(ismember(digs.trialId, validDigTrials)));
 
         rv = tmprv(validDigTrials,:);
-        validNanTrials = find(~any(isnan(rv),1));
-        rv = rv(:, validNanTrials);
+        if size(rv, 2) < mincell
+            fprintf('animal %s day %d does not have enough cells, skipping\n', animals{a}, d);
+            continue
+        end
+        
         if isempty(rv)
             fprintf('Animal %s day %d skipped after removing nans\n', animals{a}, d);
             continue
@@ -63,12 +68,12 @@ for d = 1:3
             continue
         end
         
-        mdl = fitcsvm(rv, digClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames(validNanTrials), 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
+        mdl = fitcsvm(rv, digClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames, 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
-        perAnimalPred{a} = nanmean(predAcc);
+        perTrialPred{a} = predAcc;
     end
-    cPred{d} = perAnimalPred;
+    cPred{d} = cell2mat(perTrialPred);
 end
 
 avg = nan(3,1);
@@ -79,7 +84,7 @@ fprintf(fid, 'FI cells\n');
 for d = 1:3
     fprintf('Day %d\n', d)
     fprintf(fid, 'Day %d\n', d);
-    cdata = cell2mat(cPred{d});
+    cdata = cell2mat(cPred(d));
     avg(d) = mean(cdata, 'omitnan');
     sem1(d) = std(cdata, 'omitnan') ./ sqrt(sum(~isnan(cdata)));
     sem2(d) = sqrt((mean(cdata, 'omitnan')*(1-mean(cdata, 'omitnan'))) ./ sum(~isnan(cdata)));
@@ -87,11 +92,11 @@ for d = 1:3
     [h,p, ci, stats] = ttest(cdata, .5, 'tail', 'right');
     %fprintf('\tContext Prediction on day %d p val = %.3f\n', d, p);
 
-    fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
-    fprintf(fid, '\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
+    fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d trials\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
+    fprintf(fid, '\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d trials\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
 end
 
-sem = sem1;
+sem = sem2;
 
 % Example data 
 figure;
@@ -110,14 +115,13 @@ for i = 1:nbars
     errorbar(x, avg(:,i), sem(:,i), 'k', 'linestyle', 'none');
 end
 
-
-data1 = cell2mat(cPred{1});
-data2 = cell2mat(cPred{2});
-data3 = cell2mat(cPred{3});
-
-scatter(repmat(1, length(data1),1), data1, 'ro', 'xjitter', 'rand')
-scatter(repmat(2, length(data2),1), data2, 'bo', 'xjitter', 'rand')
-scatter(repmat(3, length(data3),1), data3, 'co', 'xjitter', 'rand')
+% data1 = cell2mat(cPred{1});
+% data2 = cell2mat(cPred{2});
+% data3 = cell2mat(cPred{3});
+% 
+% scatter(repmat(1, length(data1),1), data1, 'ro', 'xjitter', 'rand')
+% scatter(repmat(2, length(data2),1), data2, 'bo', 'xjitter', 'rand')
+% scatter(repmat(3, length(data3),1), data3, 'co', 'xjitter', 'rand')
 yline(0.5);
 hold off
 ylim([0 1])
@@ -134,7 +138,7 @@ for d = 1:3
     dtbl = celltype(celltype.dayUsed == d,:);
     sessions = unique([dtbl(:,1), dtbl(:,end)], 'rows');
     animals = unique(sessions.animalName);
-    perAnimalPred = cell(length(animals),1);
+    perTrialPred = cell(length(animals),1);
     for a = 1:length(animals)
         cellnames = celltype.animalSessionCellName(ismember(celltype.animalName, animals{a}) & celltype.dayUsed == d);
         stbl = mapsData(ismember(mapsData.animalName, animals{a}) & mapsData.dayUsed == d,:);
@@ -145,16 +149,16 @@ for d = 1:3
             cellTrials = ctbl.trialId;
             tmprv(cellTrials, c) = ctbl.mfr;
         end
+        tmprv(isnan(tmprv)) = 0;
         validDigTrials = digs.trialId(ismember(digs.dig, [northDigs, southDigs]));
         digClass = categorical(digs.dig(ismember(digs.trialId, validDigTrials)));
 
         rv = tmprv(validDigTrials,:);
-        validNanTrials = find(~any(isnan(rv),1));
-        rv = rv(:, validNanTrials);
-        if isempty(rv)
-            fprintf('Animal %s day %d skipped after removing nans\n', animals{a}, d);
+        if size(rv, 2) < mincell
+            fprintf('animal %s day %d does not have enough cells, skipping\n', animals{a}, d);
             continue
         end
+       
         
         % 
         if sum(ismember(digClass, northDigs)) < 2 || sum(ismember(digClass, southDigs)) < 2
@@ -162,12 +166,13 @@ for d = 1:3
             continue
         end
         
-        mdl = fitcsvm(rv, digClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames(validNanTrials), 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
+        mdl = fitcsvm(rv, digClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames, 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
-        perAnimalPred{a} = nanmean(predAcc);
+       % perAnimalPred{a} = nanmean(predAcc);
+       perTrialPred{a} = predAcc;
     end
-    cPred{d} = perAnimalPred;
+    cPred{d} = cell2mat(perTrialPred);
 end
 
 avg = nan(3,1);
@@ -178,7 +183,7 @@ fprintf(fid, 'FS Cells\n');
 for d = 1:3
     fprintf('Day %d\n', d)
     fprintf(fid, 'Day %d\n', d);
-    cdata = cell2mat(cPred{d});
+    cdata = cell2mat(cPred(d));
     avg(d) = mean(cdata, 'omitnan');
     sem1(d) = std(cdata, 'omitnan') ./ sqrt(sum(~isnan(cdata)));
     sem2(d) = sqrt((mean(cdata, 'omitnan')*(1-mean(cdata, 'omitnan'))) ./ sum(~isnan(cdata)));
@@ -186,12 +191,12 @@ for d = 1:3
     [h,p, ci, stats] = ttest(cdata, .5, 'tail', 'right');
     %fprintf('\tContext Prediction on day %d p val = %.3f\n', d, p);
 
-    fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
-    fprintf(fid,'\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
+    fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d trials\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
+    fprintf(fid,'\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d trials\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
 
 end
 
-sem = sem1;
+sem = sem2;
 
 % Example data 
 subplot(1,2,2);
@@ -209,14 +214,14 @@ for i = 1:nbars
     errorbar(x, avg(:,i), sem(:,i), 'k', 'linestyle', 'none');
 end
 
-
-data1 = cell2mat(cPred{1});
-data2 = cell2mat(cPred{2});
-data3 = cell2mat(cPred{3});
-
-scatter(repmat(1, length(data1),1), data1, 'ro', 'xjitter', 'rand')
-scatter(repmat(2, length(data2),1), data2, 'bo', 'xjitter', 'rand')
-scatter(repmat(3, length(data3),1), data3, 'co', 'xjitter', 'rand')
+% 
+% data1 = cell2mat(cPred{1});
+% data2 = cell2mat(cPred{2});
+% data3 = cell2mat(cPred{3});
+% 
+% scatter(repmat(1, length(data1),1), data1, 'ro', 'xjitter', 'rand')
+% scatter(repmat(2, length(data2),1), data2, 'bo', 'xjitter', 'rand')
+% scatter(repmat(3, length(data3),1), data3, 'co', 'xjitter', 'rand')
 
 yline(0.5)
 hold off
@@ -227,9 +232,9 @@ title('FS cell heading prediction');
 
 %%
 
-sgtitle('Analysis done per Animal');
+sgtitle('Heading Prediction per trial');
 fclose(fid);
 
-saveas(gcf, 'heading_pred_per_animal_per_celltype.png')
+saveas(gcf, fullfile(output_path, 'heading_pred_per_trial.pdf'))
 
 

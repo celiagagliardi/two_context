@@ -1,4 +1,7 @@
 %% Context prediction using rates and SVMs
+% Use Corr and Geo trials to predict context. Do prediction per cell type
+% and see if any one cell type is driving the predictions, as per reviewer
+% 2's suggestion. 
 % CMG
 % 1/31/24
 clear all;
@@ -21,7 +24,8 @@ fs_ba = baData(baData.isStable ==0,:);
 fid = fopen(fullfile(output_path, 'context_pred_per_animal.txt'), 'w');
 fprintf(fid, 'Context Prediction using rates, broken down by cell type, per animal\n\n');
 
-
+validDigs = {'Corr', 'Geo'};
+mincell = 3;
 %% Perform Context prediction in FI cells. 
 celltype = fi_ba;
 cPred = cell(1,3);
@@ -33,7 +37,7 @@ for d = 1:3
     for a = 1:length(animals)
         cellnames = celltype.animalSessionCellName(ismember(celltype.animalName, animals{a}) & celltype.dayUsed == d);
         stbl = mapsData(ismember(mapsData.animalName, animals{a}) & mapsData.dayUsed == d,:);
-        contextTbl = unique([stbl(:,6), stbl(:,7)], 'rows'); 
+        contextTbl = unique([stbl(:,6), stbl(:,7), stbl(:,9)], 'rows'); 
         tmprv = nan(length(contextTbl.trialId), length(cellnames));
         for c = 1:length(cellnames)
             ctbl = mapsData(ismember(mapsData.animalSessionCellName, cellnames{c}),:);
@@ -45,8 +49,8 @@ for d = 1:3
         rv = tmprv(validTrials,:);
         contextClass = categorical(contextTbl.contextId(ismember(contextTbl.trialId, validTrials)));
        
-        if isempty(rv)
-            fprintf('Animal %s day %d skipped after removing nans\n', animals{a}, d);
+        if size(rv, 2) < mincell
+            fprintf('animal %s day %d does not have enough cells, skipping\n', animals{a}, d);
             continue
         end
 
@@ -141,8 +145,8 @@ for d = 1:3
         rv = tmprv(validTrials,:);
         contextClass = categorical(contextTbl.contextId(ismember(contextTbl.trialId, validTrials)));
 
-        if isempty(rv)
-            fprintf('Animal %s day %d skipped after removing nans\n', animals{a}, d);
+        if size(rv, 2) < mincell
+            fprintf('animal %s day %d does not have enough cells, skipping\n', animals{a}, d);
             continue
         end
 

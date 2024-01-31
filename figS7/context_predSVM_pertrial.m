@@ -1,7 +1,4 @@
 %% Context prediction using rates and SVMs
-% Use Corr and Geo trials to predict context. Do prediction per cell type
-% and see if any one cell type is driving the predictions, as per reviewer
-% 2's suggestion. 
 % CMG
 % 1/31/24
 clear all;
@@ -21,11 +18,12 @@ baData = reformatTbl(analysisResults.BestAligned);
 fi_ba = baData(baData.isStable ==1,:);
 fs_ba = baData(baData.isStable ==0,:);
 
-fid = fopen(fullfile(output_path, 'context_pred_per_animal.txt'), 'w');
-fprintf(fid, 'Context Prediction using rates, broken down by cell type, per animal\n\n');
-
 validDigs = {'Corr', 'Geo'};
+
+fid = fopen(fullfile(output_path, 'context_pred_per_trial.txt'), 'w');
+fprintf(fid, 'Context Prediction using rates, broken down by cell type, per trial\n\n');
 mincell = -inf;
+
 %% Perform Context prediction in FI cells. 
 celltype = fi_ba;
 cPred = cell(1,3);
@@ -33,7 +31,7 @@ for d = 1:3
     dtbl = celltype(celltype.dayUsed == d,:);
     sessions = unique([dtbl(:,1), dtbl(:,end)], 'rows');
     animals = unique(sessions.animalName);
-    perAnimalPred = cell(length(animals),1);
+    perTrialPred = cell(length(animals),1);
     for a = 1:length(animals)
         cellnames = celltype.animalSessionCellName(ismember(celltype.animalName, animals{a}) & celltype.dayUsed == d);
         stbl = mapsData(ismember(mapsData.animalName, animals{a}) & mapsData.dayUsed == d,:);
@@ -49,11 +47,12 @@ for d = 1:3
             & ismember(contextTbl.dig, validDigs));
         rv = tmprv(validTrials,:);
         contextClass = categorical(contextTbl.contextId(ismember(contextTbl.trialId, validTrials)));
-       
+        
         if size(rv, 2) < mincell
             fprintf('animal %s day %d does not have enough cells, skipping\n', animals{a}, d);
             continue
         end
+        
 
         if sum(ismember(contextClass,'1')) < 2 || sum(ismember(contextClass,'2')) < 2
             fprintf('animal %s day %d does not have enough cellular data to predict context\n', animals{a}, d);
@@ -63,9 +62,9 @@ for d = 1:3
         mdl = fitcsvm(rv, contextClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames, 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
-        perAnimalPred{a} = nanmean(predAcc);
+        perTrialPred{a} = predAcc;
     end
-    cPred{d} = perAnimalPred;
+    cPred{d} = cell2mat(perTrialPred);
 end
 
 avg = nan(3,1);
@@ -76,7 +75,7 @@ fprintf(fid, 'FI cells\n');
 for d = 1:3
     fprintf('Day %d\n', d)
     fprintf(fid, 'Day %d\n', d);
-    cdata = cell2mat(cPred{d});
+    cdata = cell2mat(cPred(d));
     avg(d) = mean(cdata, 'omitnan');
     sem1(d) = std(cdata, 'omitnan') ./ sqrt(sum(~isnan(cdata)));
     sem2(d) = sqrt((mean(cdata, 'omitnan')*(1-mean(cdata, 'omitnan'))) ./ sum(~isnan(cdata)));
@@ -84,11 +83,11 @@ for d = 1:3
     [h,p, ci, stats] = ttest(cdata, .5, 'tail', 'right');
     %fprintf('\tContext Prediction on day %d p val = %.3f\n', d, p);
 
-    fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
-    fprintf(fid, '\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
+    fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d trials\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
+    fprintf(fid, '\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d trials\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
 end
 
-sem = sem1;
+sem = sem2;
 
 % Example data 
 figure;
@@ -107,15 +106,16 @@ for i = 1:nbars
     errorbar(x, avg(:,i), sem(:,i), 'k', 'linestyle', 'none');
 end
 
+% 
+% data1 = cell2mat(cPred{1});
+% data2 = cell2mat(cPred{2});
+% data3 = cell2mat(cPred{3});
+% 
+% scatter(repmat(1, length(data1),1), data1, 'ro', 'xjitter', 'rand')
+% scatter(repmat(2, length(data2),1), data2, 'bo', 'xjitter', 'rand')
+% scatter(repmat(3, length(data3),1), data3, 'co', 'xjitter', 'rand')
 
-data1 = cell2mat(cPred{1});
-data2 = cell2mat(cPred{2});
-data3 = cell2mat(cPred{3});
-
-scatter(repmat(1, length(data1),1), data1, 'ro', 'xjitter', 'rand')
-scatter(repmat(2, length(data2),1), data2, 'bo', 'xjitter', 'rand')
-scatter(repmat(3, length(data3),1), data3, 'co', 'xjitter', 'rand')
-
+yline(0.5);
 hold off
 ylim([0 1])
 ylabel('Prediction Accuracy');
@@ -130,7 +130,7 @@ for d = 1:3
     dtbl = celltype(celltype.dayUsed == d,:);
     sessions = unique([dtbl(:,1), dtbl(:,end)], 'rows');
     animals = unique(sessions.animalName);
-    perAnimalPred = cell(length(animals),1);
+    perTrialPred = cell(length(animals),1);
     for a = 1:length(animals)
         cellnames = celltype.animalSessionCellName(ismember(celltype.animalName, animals{a}) & celltype.dayUsed == d);
         stbl = mapsData(ismember(mapsData.animalName, animals{a}) & mapsData.dayUsed == d,:);
@@ -160,9 +160,9 @@ for d = 1:3
         mdl = fitcsvm(rv, contextClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames, 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
-        perAnimalPred{a} = nanmean(predAcc);
+        perTrialPred{a} = predAcc;
     end
-    cPred{d} = perAnimalPred;
+    cPred{d} = cell2mat(perTrialPred);
 end
 
 avg = nan(3,1);
@@ -173,7 +173,7 @@ fprintf(fid, 'FS Cells\n');
 for d = 1:3
     fprintf('Day %d\n', d)
     fprintf(fid, 'Day %d\n', d);
-    cdata = cell2mat(cPred{d});
+    cdata = cell2mat(cPred(d));
     avg(d) = mean(cdata, 'omitnan');
     sem1(d) = std(cdata, 'omitnan') ./ sqrt(sum(~isnan(cdata)));
     sem2(d) = sqrt((mean(cdata, 'omitnan')*(1-mean(cdata, 'omitnan'))) ./ sum(~isnan(cdata)));
@@ -181,12 +181,12 @@ for d = 1:3
     [h,p, ci, stats] = ttest(cdata, .5, 'tail', 'right');
     %fprintf('\tContext Prediction on day %d p val = %.3f\n', d, p);
 
-    fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
-    fprintf(fid,'\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
+    fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d trials\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
+    fprintf(fid,'\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d trials\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
 
 end
 
-sem = sem1;
+sem = sem2;
 
 % Example data 
 subplot(1,2,2);
@@ -205,14 +205,14 @@ for i = 1:nbars
 end
 
 
-data1 = cell2mat(cPred{1});
-data2 = cell2mat(cPred{2});
-data3 = cell2mat(cPred{3});
-
-scatter(repmat(1, length(data1),1), data1, 'ro', 'xjitter', 'rand')
-scatter(repmat(2, length(data2),1), data2, 'bo', 'xjitter', 'rand')
-scatter(repmat(3, length(data3),1), data3, 'co', 'xjitter', 'rand')
-
+% data1 = cell2mat(cPred{1});
+% data2 = cell2mat(cPred{2});
+% data3 = cell2mat(cPred{3});
+% 
+% scatter(repmat(1, length(data1),1), data1, 'ro', 'xjitter', 'rand')
+% scatter(repmat(2, length(data2),1), data2, 'bo', 'xjitter', 'rand')
+% scatter(repmat(3, length(data3),1), data3, 'co', 'xjitter', 'rand')
+yline(0.5)
 hold off
 ylim([0 1])
 ylabel('Prediction Accuracy');
@@ -221,9 +221,9 @@ title('FS cell context prediction');
 
 %%
 
-sgtitle('Context Prediction per Animal');
+sgtitle('Context Prediction per trial');
 fclose(fid);
 
-saveas(gcf, fullfile(output_path, 'context_pred_per_animal.pdf'))
+saveas(gcf, fullfile(output_path, 'context_pred_per_trial.pdf'))
 
 
