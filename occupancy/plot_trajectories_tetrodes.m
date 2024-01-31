@@ -22,8 +22,7 @@ for a = 1:length(ratemaps.data)
         end
         sgtitle({sprintf('%s', ratemaps.data(a).animal), sprintf('%s', ratemaps.data(a).session(d).name)}, ...
             'interpreter', 'none');
-        saveas(gcf, fullfile(output_path, sprintf('%s_%s_trajectories.png', ratemaps.data(a).animal, ratemaps.data(a).session(d).name)))
-        saveas(gcf, fullfile(output_path, sprintf('%s_%s_trajectories.fig', ratemaps.data(a).animal, ratemaps.data(a).session(d).name)))
+        saveas(gcf, fullfile(output_path, sprintf('%s_%s_trajectories.pdf', ratemaps.data(a).animal, ratemaps.data(a).session(d).name)))
     end
 end
 
