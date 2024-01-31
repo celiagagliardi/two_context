@@ -20,7 +20,7 @@ for a = 1:length(ratemaps.data)
             plot(x,y); axis ij; daspect([1 1 1]);
             title(sprintf('Trial %d', ratemaps.data(a).session(d).trial(t).trialNum));
         end
-        sgtitle({sprintf('%s', ratemaps.data(a).animal), sprintf('%s', ratemaps.data(a).session(d).name)}, ...
+        sgtitle({sprintf('%s', ratemaps.data(a).animal), sprintf('Day %d', d)}, ...
             'interpreter', 'none');
         saveas(gcf, fullfile(output_path, sprintf('%s_%s_trajectories.pdf', ratemaps.data(a).animal, ratemaps.data(a).session(d).name)))
     end
