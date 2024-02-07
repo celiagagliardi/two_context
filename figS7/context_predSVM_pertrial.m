@@ -23,6 +23,7 @@ validDigs = {'Corr', 'Geo'};
 fid = fopen(fullfile(output_path, 'context_pred_per_trial.txt'), 'w');
 fprintf(fid, 'Context Prediction using rates, broken down by cell type, per trial\n\n');
 mincell = -inf;
+mintrial = 4;
 
 %% Perform Context prediction in FI cells. 
 celltype = fi_ba;
@@ -40,8 +41,15 @@ for d = 1:3
         for c = 1:length(cellnames)
             ctbl = mapsData(ismember(mapsData.animalSessionCellName, cellnames{c}),:);
             cellTrials = ctbl.trialId;
+            if length(cellTrials) < mintrial
+                fprintf('%s day %d cell %s does not have enough trials, skipping\n', animals{a}, d, cellnames{c});
+                continue
+            end
             tmprv(cellTrials, c) = ctbl.mfr;
         end
+        % remove cells that do not participate.
+        notallnans = ~all(isnan(tmprv),1);
+        tmprv = tmprv(:, notallnans);
         tmprv(isnan(tmprv)) = 0;
         validTrials = contextTbl.trialId(ismember(contextTbl.contextId, [1,2]) ...
             & ismember(contextTbl.dig, validDigs));
@@ -139,8 +147,15 @@ for d = 1:3
         for c = 1:length(cellnames)
             ctbl = mapsData(ismember(mapsData.animalSessionCellName, cellnames{c}),:);
             cellTrials = ctbl.trialId;
+            if length(cellTrials) < mintrial
+                fprintf('%s day %d cell %s does not have enough trials, skipping\n', animals{a}, d, cellnames{c});
+                continue
+            end
             tmprv(cellTrials, c) = ctbl.mfr;
         end
+        % remove cells that do not participate.
+        notallnans = ~all(isnan(tmprv),1);
+        tmprv = tmprv(:, notallnans);
         tmprv(isnan(tmprv)) = 0;
         validTrials = contextTbl.trialId(ismember(contextTbl.contextId, [1,2]) ...
             & ismember(contextTbl.dig, validDigs));
@@ -157,7 +172,7 @@ for d = 1:3
             continue
         end
         
-        mdl = fitcsvm(rv, contextClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames, 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
+        mdl = fitcsvm(rv, contextClass', 'KernelFunction', 'linear',  'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
         perTrialPred{a} = predAcc;

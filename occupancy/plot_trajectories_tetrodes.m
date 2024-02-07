@@ -22,11 +22,43 @@ for a = 1:length(ratemaps.data)
         end
         sgtitle({sprintf('%s', ratemaps.data(a).animal), sprintf('Day %d', d)}, ...
             'interpreter', 'none');
-        saveas(gcf, fullfile(output_path, sprintf('%s_%s_trajectories.pdf', ratemaps.data(a).animal, ratemaps.data(a).session(d).name)))
+        %saveas(gcf, fullfile(output_path, sprintf('%s_%s_trajectories.pdf', ratemaps.data(a).animal, ratemaps.data(a).session(d).name)))
     end
 end
 
-close all;
+%close all;
+
+%% for letter
+a = 1;
+for d = 1:length(ratemaps.data(a).session)
+    
+    for t = 1:length(ratemaps.data(a).session(d).trial)
+        x = ratemaps.data(a).session(d).trial(t).x;
+        y = ratemaps.data(a).session(d).trial(t).y;
+        figure;
+        plot(x,y); axis ij; daspect([1 1 1]);
+        axis off;
+        title(sprintf('Trial %d', ratemaps.data(a).session(d).trial(t).trialNum));
+        
+    end
+     %saveas(gcf, fullfile(output_path, sprintf('%s_%s_trajectories.pdf', ratemaps.data(a).animal, ratemaps.data(a).session(d).name)))
+end
+
+%% for supplement
+a = 7;
+for d = 3:5
+    for t = 1:length(ratemaps.data(a).session(d).trial)
+        x = ratemaps.data(a).session(d).trial(t).x;
+        y = ratemaps.data(a).session(d).trial(t).y;
+        figure;
+        plot(x,y); axis ij; daspect([1 1 1]);
+        axis off;
+        title(sprintf('Trial %d', ratemaps.data(a).session(d).trial(t).trialNum));
+        
+    end
+     %saveas(gcf, fullfile(output_path, sprintf('%s_%s_trajectories.pdf', ratemaps.data(a).animal, ratemaps.data(a).session(d).name)))
+end
+
 
 
     

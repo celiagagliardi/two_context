@@ -26,6 +26,7 @@ fprintf(fid, 'Context Prediction using rates, broken down by cell type, per anim
 
 validDigs = {'Corr', 'Geo'};
 mincell = -inf;
+mintrial = 4;
 %% Perform Context prediction in FI cells. 
 celltype = fi_ba;
 cPred = cell(1,3);
@@ -42,8 +43,15 @@ for d = 1:3
         for c = 1:length(cellnames)
             ctbl = mapsData(ismember(mapsData.animalSessionCellName, cellnames{c}),:);
             cellTrials = ctbl.trialId;
+          if length(cellTrials) < mintrial
+                fprintf('%s day %d cell %s does not have enough trials, skipping\n', animals{a}, d, cellnames{c});
+                continue
+            end
             tmprv(cellTrials, c) = ctbl.mfr;
         end
+        % remove cells that do not participate.
+        notallnans = ~all(isnan(tmprv),1);
+        tmprv = tmprv(:, notallnans);
         tmprv(isnan(tmprv)) = 0;
         validTrials = contextTbl.trialId(ismember(contextTbl.contextId, [1,2]) ...
             & ismember(contextTbl.dig, validDigs));
@@ -60,7 +68,7 @@ for d = 1:3
             continue
         end
         
-        mdl = fitcsvm(rv, contextClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames, 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
+        mdl = fitcsvm(rv, contextClass', 'KernelFunction', 'linear', 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
         perAnimalPred{a} = nanmean(predAcc);
@@ -139,8 +147,15 @@ for d = 1:3
         for c = 1:length(cellnames)
             ctbl = mapsData(ismember(mapsData.animalSessionCellName, cellnames{c}),:);
             cellTrials = ctbl.trialId;
+            if length(cellTrials) < mintrial
+                fprintf('%s day %d cell %s does not have enough trials, skipping\n', animals{a}, d, cellnames{c});
+                continue
+            end
             tmprv(cellTrials, c) = ctbl.mfr;
         end
+        % remove cells that do not participate.
+        notallnans = ~all(isnan(tmprv),1);
+        tmprv = tmprv(:, notallnans);
         tmprv(isnan(tmprv)) = 0;
         validTrials = contextTbl.trialId(ismember(contextTbl.contextId, [1,2]) ...
             & ismember(contextTbl.dig, validDigs));
@@ -157,7 +172,7 @@ for d = 1:3
             continue
         end
         
-        mdl = fitcsvm(rv, contextClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames, 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
+        mdl = fitcsvm(rv, contextClass', 'KernelFunction', 'linear',  'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
         perAnimalPred{a} = nanmean(predAcc);
@@ -183,6 +198,9 @@ for d = 1:3
 
     fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
     fprintf(fid,'\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f, using %d animals\n',  avg(d), sem1(d), stats.df, stats.tstat, p, sum(~isnan(cdata)));
+
+    [p,h] = signrank(cdata, .5, 'tail', 'right');
+    fprintf('\tsign rank test: h = %d, p = %.3f\n', h, p)
 
 end
 

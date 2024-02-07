@@ -22,6 +22,7 @@ northDigs = {'Corr'};
 southDigs = {'Geo'};
 
 mincell = -inf;
+mintrial = 4;
 
 fid = fopen(fullfile(output_path, 'heading_pred_per_trial.txt'), 'w');
 fprintf(fid, 'Heading Prediction using rates, broken down by cell type, per trial\n\n');
@@ -44,9 +45,16 @@ for d = 1:3
         tmprv = nan(length(digs.trialId), length(cellnames));
         for c = 1:length(cellnames)
             ctbl = mapsData(ismember(mapsData.animalSessionCellName, cellnames{c}),:);
-            cellTrials = ctbl.trialId;
+           cellTrials = ctbl.trialId;
+            if length(cellTrials) < mintrial
+                fprintf('%s day %d cell %s does not have enough trials, skipping\n', animals{a}, d, cellnames{c});
+                continue
+            end
             tmprv(cellTrials, c) = ctbl.mfr;
         end
+        % remove cells that do not participate.
+        notallnans = ~all(isnan(tmprv),1);
+        tmprv = tmprv(:, notallnans);
         tmprv(isnan(tmprv)) = 0;
         validDigTrials = digs.trialId(ismember(digs.dig, [northDigs, southDigs]));
         digClass = categorical(digs.dig(ismember(digs.trialId, validDigTrials)));
@@ -68,7 +76,7 @@ for d = 1:3
             continue
         end
         
-        mdl = fitcsvm(rv, digClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames, 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
+        mdl = fitcsvm(rv, digClass', 'KernelFunction', 'linear',  'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
         perTrialPred{a} = predAcc;
@@ -147,8 +155,16 @@ for d = 1:3
         for c = 1:length(cellnames)
             ctbl = mapsData(ismember(mapsData.animalSessionCellName, cellnames{c}),:);
             cellTrials = ctbl.trialId;
+            
+            if length(cellTrials) < mintrial
+                fprintf('%s day %d cell %s does not have enough trials, skipping\n', animals{a}, d, cellnames{c});
+                continue
+            end
             tmprv(cellTrials, c) = ctbl.mfr;
         end
+        % remove cells that do not participate.
+        notallnans = ~all(isnan(tmprv),1);
+        tmprv = tmprv(:, notallnans);
         tmprv(isnan(tmprv)) = 0;
         validDigTrials = digs.trialId(ismember(digs.dig, [northDigs, southDigs]));
         digClass = categorical(digs.dig(ismember(digs.trialId, validDigTrials)));
@@ -166,7 +182,7 @@ for d = 1:3
             continue
         end
         
-        mdl = fitcsvm(rv, digClass', 'KernelFunction', 'linear', 'PredictorNames', cellnames, 'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
+        mdl = fitcsvm(rv, digClass', 'KernelFunction', 'linear',  'Prior', 'empirical', 'Leaveout', 'on', 'Verbose',0); 
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
        % perAnimalPred{a} = nanmean(predAcc);

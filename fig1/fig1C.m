@@ -1,7 +1,7 @@
-data_path = '/Users/celia/Documents/two_context_data';
 % CMG
 % Most of the legwork is going to be in illustrator. This code will spit
 % out the dig percentages in each corner with standard errors.
+data_path = '/Users/celia/Documents/two_context_data';
 
 data = readtable(fullfile(data_path, 'behavior.xlsx'));
 
