@@ -32,7 +32,6 @@ fprintf('Analysis done on %s cells\n', cell2analyze);
 
 cPredH = cell(7,3);
 cPredC = cell(7,3);
-fprintf('all cells\n\n');
 for d = 1:3
     dtbl = celltype(celltype.dayUsed == d,:);
     sessions = unique([dtbl(:,1), dtbl(:,end)], 'rows');
@@ -85,8 +84,6 @@ end
 avg = nan(3,1);
 sem1 = nan(3,1);
 sem2 = nan(3,1);
-fprintf('Context Prediction using ALL cell rates\n')
-%fprintf(fid, 'FI cells\n');
 for d = 1:3
     fprintf('Day %d\n', d)
     cdata = cell2mat(cPredC(:,d));
@@ -194,5 +191,4 @@ ylabel('Prediction Accuracy');
 xlabel('Day');
 title(sprintf('%s cell heading prediction', cell2analyze));
 
-
-       
+%%       

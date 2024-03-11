@@ -44,3 +44,8 @@ grid on;
 xline(0.3);
 xlabel('Context Similarity');
 ylabel('Probability');
+
+%%
+
+calcells = reformatTbl(tmptbl1);
+tetcells = reformatTbl(tmptbl);

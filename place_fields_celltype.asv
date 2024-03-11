@@ -1,0 +1,6 @@
+data_path = '/Users/celia/Documents/two_context_data';
+calin = load(fullfile(data_path, 'calcium_20220516_170618/analysis_results.mat'));
+tetin = load(fullfile(data_path, 'tetrodes_20220316_100902_FINAL/analysis_results.mat'));
+ba = reformatTbl([tetin.analysisResults.BestAligned; calin.analysisResults.BestAligned]);
+
+tbl = ba(ba.isStable == )
