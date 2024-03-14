@@ -1,5 +1,8 @@
 function [rmTbl] =reformatTbl(tbl, vars2remove)
-
+%% reformatTbl
+% Marc's output is confusing so add a column that indicates session number
+% based on the name of the recording. Use column 'dayUsed' to index day of
+% testing.
 %tbl = analysisResults.RateMatrices;
 animals = unique(tbl.animalName);
 rmTbl = [];
