@@ -8,6 +8,8 @@ tetout = load(fullfile(data_path, 'tetrodes_20220316_100902/analysis_results.mat
 calin = load(fullfile(data_path, 'calcium_20220516_170618/analysis_input.mat'));
 tetin = load(fullfile(data_path, 'tetrodes_20220316_100902/analysis_input.mat'));
 
+fid = fopen('Fig4Ddata.csv', 'w');
+fprintf(fid, 'animal, day, celltype, accuracy\n');
 %% combine maps from tetrodes and calcium
 tetmaps = reformatTbl(tetin.analysisInput.MapsData);
 calmaps = reformatTbl(calin.analysisInput.MapsData);
@@ -35,7 +37,6 @@ for a = 1:length(animals)
         ficells = unique(tbl.animalSessionCellName(ismember(tbl.animalSessionCellName, ficells_all)));
         fscells = unique(tbl.animalSessionCellName(ismember(tbl.animalSessionCellName, fscells_all)));
 
-        fprintf('Animal %s day %d has %d FI and %d FS cells\n', animals{a}, d, length(ficells), length(fscells));
         contextTrial = unique([tbl.trialId, tbl.contextId], 'rows');
         trialId = contextTrial(:,1);
         contextId = contextTrial(:,2);
@@ -113,7 +114,7 @@ for a = 1:length(animals)
         fi_maps(cellfun(@isempty, fi_maps)) = {nan(mapSize)};
         fs_maps(cellfun(@isempty, fs_maps)) = {nan(mapSize)};
 
-        %% averages and predict one cell at a time
+       
         fi_predict = nan(length(trialId),1);
         fs_predict = nan(length(trialId),1);
         if ~isempty(fi_maps)
@@ -187,6 +188,7 @@ for a = 1:length(animals)
         end
 
         fi_pred{a,d} = nanmean(fi_predict);
+        fprintf(fid,'%s, %d, FI, %.3f\n', animals{a}, d, nanmean(fi_predict));
 
         % now FS maps
         if ~isempty(fs_maps)
@@ -260,26 +262,19 @@ for a = 1:length(animals)
         end
 
         fs_pred{a,d} = nanmean(fs_predict);
+        fprintf(fid, '%s, %d, FS, %.3f\n', animals{a}, d, nanmean(fs_predict));
     end
 end
 
 %% Graph results
 avg = nan(3,1);
 sem = nan(3,1);
-fprintf('Context Prediction using average dot product of population vectors OR CORRELATION \n')
+
 for d = 1:3
-    fprintf('Day %d FI cells\n', d)
+    
     cdata = cell2mat(fi_pred(:,d));
     avg(d) = mean(cdata, 'omitnan');
     sem(d) = std(cdata, 'omitnan') ./ sqrt(sum(~isnan(cdata)));
-
-    [h,p, ci, stats] = ttest(cdata, .5, 'tail', 'right');
-
-    %fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f,  using %s cells and %d %ss\n',  avg(d), sem(d), stats.df, stats.tstat, p, 'FI', sum(~isnan(cdata)), 'animals');
-    fprintf('\t avg = %.4f, sem = %.4f\n',  avg(d), sem(d));
-    fprintf('\t\t one sample ttest: t(%d) = %.3f, p = %.5f, using %s cells and %d %s\n', stats.df, stats.tstat, p, 'FI', sum(~isnan(cdata)), 'animals');
-    p = signrank(cdata, .5, 'tail', 'right');
-    fprintf('\t\t signrank test: p = %.3f\n', p);
 
 end
 
@@ -311,20 +306,12 @@ title('FI cells')
 
 avg = nan(3,1);
 sem = nan(3,1);
-fprintf('Context Prediction using average dot product of population vectors OR CORRELATION \n')
 for d = 1:3
-    fprintf('Day %d FS cells\n', d)
+  
     cdata = cell2mat(fs_pred(:,d));
     avg(d) = mean(cdata, 'omitnan');
     sem(d) = std(cdata, 'omitnan') ./ sqrt(sum(~isnan(cdata)));
 
-    [h,p, ci, stats] = ttest(cdata, .5, 'tail', 'right');
-
-    %fprintf('\t avg = %.4f, sem = %.4f, t(%d) = %.3f, p = %.5f,  using %s cells and %d %ss\n',  avg(d), sem(d), stats.df, stats.tstat, p, 'FI', sum(~isnan(cdata)), 'animals');
-    fprintf('\t avg = %.4f, sem = %.4f, using %s cells and %d %s\n',  avg(d), sem(d), 'FS', sum(~isnan(cdata)), 'animals');
-    fprintf('\t\t one tail t test: t(%d) = %.3f, p = %.5f\n',  stats.df, stats.tstat, p);
-    p = signrank(cdata, .5, 'tail', 'right');
-    fprintf('\t\t sign rank test: p = %.3f\n', p);
 end
 
 
@@ -352,3 +339,4 @@ title('FS context prediction');
 
 hold off
 ylim([0 1])
+fclose(fid);

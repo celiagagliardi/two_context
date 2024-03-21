@@ -12,6 +12,9 @@ cPred = cell(length(animals),3);
 northDigs = {'Corr'};
 southDigs = {'Geo'};
 
+fid = fopen('Fig7Fdata.csv', 'w');
+fprintf(fid, 'animal, day, acc\n');
+
 for a = 1:length(animals)
    
     for s = 1:3
@@ -66,6 +69,7 @@ for a = 1:length(animals)
         err = kfoldLoss(mdl, 'mode', 'individual');
         predAcc = 1 - err;
         cPred{a, s} = nanmean(predAcc);
+        fprintf(fid, '%s, %d, %.3f\n', animals{a}, s, nanmean(predAcc));
     
     end 
 end
@@ -80,8 +84,11 @@ for d = 1:3
     sem(d) = std(cdata) ./ sqrt(length(cdata));
   
     fprintf('\t\t avg = %.4f, sem = %.4f, using %d animals\n',  avg(d), sem(d), length(cdata));
-     [p,h] = signrank(cell2mat(cPred(:,d)), .5, 'tail', 'right');
+     [p,h] = signrank(cdata, .5, 'tail', 'right');
     fprintf('\t\t\t sign rank test h = %d, p = %.3f\n', h, p);
+    [h,p,ci,stats] = ttest(cdata, .5, 'tail', 'right');
+    fprintf('\t\t one sample ttest: t(%d) = %.3f, p = %.5f\n', stats.df, stats.tstat, p);
+  
 end
 
 
@@ -114,4 +121,4 @@ hold off
 ylim([0 0.9])
 title('Heading prediction using firing rate');
 
-    
+fclose(fid);
