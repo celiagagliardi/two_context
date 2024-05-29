@@ -26,15 +26,3 @@ end
 figure;
 barh(figData, 'stacked');
 
-%% write to source data file
-
-srcfile = '/Users/celia/Library/CloudStorage/OneDrive-UniversityofIowa/General - Two Context/celia_sourcedata/source_data.xlsx';
-tmpT = best_aligned(:,[5, 22, 20, 21]);
-tmpT = renamevars(tmpT, 'isStable', 'isFI');
-
-writetable(tmpT, srcfile, 'Sheet', 'Fig3D');
-
-tmpT = table(figData(:,1), figData(:,2), 'VariableNames', {'FI_percent', 'FS_percent'});
-writetable(tmpT, srcfile, 'Sheet', 'Fig3D', 'Range', 'G1');
-
-

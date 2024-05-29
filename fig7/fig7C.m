@@ -92,17 +92,3 @@ end
 
 colorbar
 
-%% write data for source file
-srcfile = '/Users/celia/Library/CloudStorage/OneDrive-UniversityofIowa/General - Two Context/celia_sourcedata/source_data.xlsx';
-
-T = [];
-for d = 1:3
-    dayRm = rmDay(:,d);
-    allRm = cat(3,dayRm{:});
-    avgRm = nanmean(allRm,3);
-    t = table(avgRm, 'VariableNames', {sprintf('Day %d', d)});
-    T= [T, t];
-
-end
-
-writetable(T, srcfile, 'Sheet', 'fig7C')

@@ -17,9 +17,9 @@ histogram(best_aligned.bestCorrelation, 'BinWidth', binWidth, 'normalization', '
 [probN, edges] = histcounts(best_aligned.bestCorrelation, 'binWidth', binWidth, 'normalization', 'probability');
 
 binCenters = edges(1:end-1) + diff(edges) / 2;
-
-writetable(best_aligned(:,[5,20]), 'source_data.xlsx', 'Sheet', 'Fig3D');
-
-tmpT = table(binCenters', N', probN', 'VariableNames', {'BinCenters', 'Hist_counts', 'Hist_probability'});
-writetable(tmpT, 'source_data.xlsx', 'Sheet', 'Fig3D', 'Range', 'E1');
-
+% 
+% writetable(best_aligned(:,[5,20]), 'source_data.xlsx', 'Sheet', 'Fig3D');
+% 
+% tmpT = table(binCenters', N', probN', 'VariableNames', {'BinCenters', 'Hist_counts', 'Hist_probability'});
+% writetable(tmpT, 'source_data.xlsx', 'Sheet', 'Fig3D', 'Range', 'E1');
+% 
