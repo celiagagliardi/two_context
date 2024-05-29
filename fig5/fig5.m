@@ -138,6 +138,43 @@ end
 sgtitle('Rotation distribution in all trial pairs per trial pair')
 linkaxes(ax, 'xy');
 
+%% Figure 5D Boxplots
+clear ax;
+figure
+for d = 1:3
+    m = cell(1, 4); % m columns per group
+    
+    fiw = cell2mat(fi_within_rotdist(:,d));
+    fia = cell2mat(fi_across_rotdist(:,d));
+    fsw = cell2mat(fs_within_rotdist(:,d));
+    fsa = cell2mat(fs_across_rotdist(:,d));
+
+    % nan pad to make sure they are the same size
+    sizes = [size(fiw,1), size(fia,1), size(fsw,1), size(fsa, 1)];
+
+    fprintf('5D: Number of trial pairs on day %d\n', d);
+    fprintf('\t FIwithin n = %d, FIacross n = %d, FSwithin n = %d, FSacross n = %d\n', ...
+        sizes(1), sizes(2), sizes(3), sizes(4));
+    maxsize = max(sizes);
+    fiw(end+1:maxsize,:) = nan;
+    fia(end+1:maxsize,:) = nan;
+    fsw(end+1:maxsize,:) = nan;
+    fsa(end+1:maxsize,:) = nan;
+
+    % arrange data
+    m{1} = [fiw(:,1), fia(:,1), fsw(:,1), fsa(:,1)];
+    m{2} = [fiw(:,2), fia(:,2), fsw(:,2), fsa(:,2)];
+    m{3} = [fiw(:,3), fia(:,3), fsw(:,3), fsa(:,3)];
+    m{4} = [fiw(:,4), fia(:,4), fsw(:,4), fsa(:,4)];
+   
+     ax(d) = subplot(1,3, d);
+    boxplotGroup(m, 'symbol', '','primaryLabels', {'1', '2', '3', '4'}, 'secondarylabels', {'FI within', 'FI across', 'FS within', 'FS across'}); hold on;
+    yline(.25, 'k-')
+    title(sprintf('day %d', d));
+end
+sgtitle('Rotation distribution in all trial pairs per trial pair BOXPLOTS')
+linkaxes(ax, 'xy');
+
 %% Figure 5E
  
 fiwithin = cell(length(animals),3);
@@ -272,6 +309,101 @@ ylabel('Cell Proportions');
 legend('1st BMR', '2nd BMR')
 
 linkaxes(ax, 'xy')
+
+%% Figure 5e boxplots
+figure;
+m = cell(1,2);
+
+data1 = cell2mat(fiwithin(:,1)); data2 = cell2mat(fiwithin(:,2));
+data3 = cell2mat(fiwithin(:,3));
+% nan pad to make sure they are the same size
+sizes = [size(data1,1), size(data2,1), size(data3,1)];
+fprintf('5E: FI within trial pairs\n')
+fprintf('\tday 1: 1st BMR n = %d')
+maxsize = max(sizes);
+data1(end+1:maxsize,:) = nan;
+data2(end+1:maxsize,:) = nan;
+data3(end+1:maxsize,:) = nan;
+
+m{1} = [data1(:,1), data2(:,1), data3(:,1)];
+m{2} = [data1(:,2), data2(:,2), data3(:,2)];
+clear ax;
+ax(1) = subplot(1,4,1);
+boxplotGroup(m, 'symbol', '', 'primaryLabels', {'1st', '2nd'}, ...
+    'secondaryLabels', {'Day 1', 'Day 2', 'Day 3'}); 
+hold on;
+yline(.25);
+title('FI Within');
+%
+m = cell(1,2);
+
+data1 = cell2mat(fiacross(:,1)); data2 = cell2mat(fiacross(:,2));
+data3 = cell2mat(fiacross(:,3));
+% nan pad to make sure they are the same size
+sizes = [size(data1,1), size(data2,1), size(data3,1)];
+maxsize = max(sizes);
+data1(end+1:maxsize,:) = nan;
+data2(end+1:maxsize,:) = nan;
+data3(end+1:maxsize,:) = nan;
+
+m{1} = [data1(:,1), data2(:,1), data3(:,1)];
+m{2} = [data1(:,2), data2(:,2), data3(:,2)];
+
+ax(2) = subplot(1,4,2);
+boxplotGroup(m, 'symbol', '', 'primaryLabels', {'1st', '2nd'}, ...
+    'secondaryLabels', {'Day 1', 'Day 2', 'Day 3'}); 
+hold on;
+yline(.25);
+title('FI Across');
+
+m = cell(1,2);
+
+data1 = cell2mat(fswithin(:,1)); data2 = cell2mat(fswithin(:,2));
+data3 = cell2mat(fswithin(:,3));
+% nan pad to make sure they are the same size
+sizes = [size(data1,1), size(data2,1), size(data3,1)];
+maxsize = max(sizes);
+data1(end+1:maxsize,:) = nan;
+data2(end+1:maxsize,:) = nan;
+data3(end+1:maxsize,:) = nan;
+
+m{1} = [data1(:,1), data2(:,1), data3(:,1)];
+m{2} = [data1(:,2), data2(:,2), data3(:,2)];
+
+ax(3) = subplot(1,4,3);
+boxplotGroup(m, 'symbol', '', 'primaryLabels', {'1st', '2nd'}, ...
+    'secondaryLabels', {'Day 1', 'Day 2', 'Day 3'}); 
+hold on;
+yline(.25);
+title('FS Within');
+%
+m = cell(1,2);
+
+data1 = cell2mat(fsacross(:,1)); data2 = cell2mat(fsacross(:,2));
+data3 = cell2mat(fsacross(:,3));
+% nan pad to make sure they are the same size
+sizes = [size(data1,1), size(data2,1), size(data3,1)];
+maxsize = max(sizes);
+data1(end+1:maxsize,:) = nan;
+data2(end+1:maxsize,:) = nan;
+data3(end+1:maxsize,:) = nan;
+
+m{1} = [data1(:,1), data2(:,1), data3(:,1)];
+m{2} = [data1(:,2), data2(:,2), data3(:,2)];
+
+ax(4) = subplot(1,4,4);
+boxplotGroup(m, 'symbol', '', 'primaryLabels', {'1st', '2nd'}, ...
+    'secondaryLabels', {'Day 1', 'Day 2', 'Day 3'}); 
+hold on;
+yline(.25);
+title('FS Across');
+
+linkaxes(ax, 'xy');
+
+
+
+
+
 
 %% Figure 5F
 

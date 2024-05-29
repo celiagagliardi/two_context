@@ -100,9 +100,7 @@ for d = 1:3
     dayRm = rmDay(:,d);
     allRm = cat(3,dayRm{:});
     avgRm = nanmean(allRm,3);
-    t = table(avgRm, 'VariableNames', {sprintf('Day %d', d)});
-    T= [T, t];
-
+    T = [T; avgRM];
 end
 
-writetable(T, srcfile, 'Sheet', 'fig7C')
+

@@ -118,7 +118,7 @@ scatter(repmat(2, length(data2),1), data2, 'bo', 'xjitter', 'rand')
 scatter(repmat(3, length(data3),1), data3, 'co', 'xjitter', 'rand')
 
 hold off
-ylim([0 0.9])
+ylim([0 1])
 title('Heading prediction using firing rate');
 
 fclose(fid);
